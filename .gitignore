@@ -1,0 +1,7 @@
+.classpath
+.settings
+.project
+target
+YOLOs-CPP
+yolib/build
+yolib/onnxruntime*
