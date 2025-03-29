@@ -1,5 +1,7 @@
 # Yolo Java PoC
 
+This PoC uses the Foreign Function and Memory API to hook into a custom library which uses YOLOs-CPP to run inference on OpenCV Mats which can be provided by Video4j.
+
 ## Build 
 
 Building native code
