@@ -42,6 +42,6 @@ public class BoundingBoxMemoryLayout {
 	}
 
 	public static int getHeight(MemorySegment segment) {
-		return (int) HEIGHT_HANDLE.get(segment, 0);
+		return (int) HEIGHT_HANDLE.get(segment);
 	}
 }

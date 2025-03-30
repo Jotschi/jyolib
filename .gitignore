@@ -6,3 +6,4 @@ target
 YOLOs-CPP
 yolib/build
 yolib/onnxruntime*
+hs_err*

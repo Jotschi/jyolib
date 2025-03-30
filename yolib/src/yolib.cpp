@@ -24,8 +24,20 @@ extern "C" void initialize()
     }
 }
 
+extern "C" std::vector<BoundingBox>* box() {
+    std::vector<BoundingBox>* bboxVec = new std::vector<BoundingBox>();
+    bboxVec->emplace_back(42,41,40,39);
+    bboxVec->emplace_back(1,2,3,4);
+    return bboxVec;
+}
+
+    //BoundingBox* bbox =new BoundingBox(42,41,40,39);;
+    //printf("Lib: box addr is %p\n", (void*)bbox);
+    //printf("Lib: box size is %i\n", sizeof(*bbox));
+    //printf("Lib: box val is %i\n", bbox->height);
+    //fflush(stdout);
 // std::vector<Detection>*
-extern "C" BoundingBox *detect(cv::Mat *imagePtr)
+extern "C" BoundingBox detect(cv::Mat *imagePtr)
 {
 
     initialize();
@@ -52,19 +64,25 @@ extern "C" BoundingBox *detect(cv::Mat *imagePtr)
     // std::vector<BoundingBox> boxes;
     if (results.empty())
     {
-        return nullptr;
+        //return nullptr;
         // return boxes.dat
+        return BoundingBox();
     }
     else
     {
         detector->drawBoundingBox(image, results);
-        std::cerr << "Size:" << sizeof(results.front()) << std::endl;
+        std::cerr << "Lib: Size:" << results.size() << " " << sizeof(results.front().box) << " ADDR " << std::endl;
+        printf("Lib: box addr is %p\n", results.front().box);
+        //fflush(stdout);
         BoundingBox box = results.front().box;
-        printf("box: %i:%i - %ix%i\n", box.x, box.y, box.width, box.height);
+        printf("Lib: box: %i:%i - %ix%i\n", box.x, box.y, box.width, box.height);
+        //fflush(stdout);
         std::vector<BoundingBox> boxes;
         boxes.push_back(box);
-        printf("box addr is %p\n", boxes.data());
-        return boxes.data();
-        // return &box;
+        printf("Lib: data addr is %p\n", boxes.data());
+        printf("Lib: data size is %p\n", sizeof(boxes.data()));
+        fflush(stdout);
+        //return boxes.data();
+         return box;
     }
 }
