@@ -49,18 +49,6 @@ public class YoloLib {
 
 	private static List<String> labels;
 
-	// public static List<Detection> box() throws Throwable {
-	// checkInitialized();
-	// MethodHandle detectTestHandler = linker.downcallHandle(
-	// SymbolLookup.libraryLookup(libPath, arena).find("detect_test").orElseThrow(),
-	// FunctionDescriptor.of(ADDR));
-	//
-	// MemorySegment detectionArrayStruct = (MemorySegment) detectTestHandler.invoke();
-	//
-	// return mapDetectionsArray(detectionArrayStruct);
-	//
-	// }
-
 	private static void checkInitialized() {
 		if (!initialized) {
 			throw new RuntimeException("YoloLib not initialized");
@@ -100,7 +88,7 @@ public class YoloLib {
 		}
 
 		// Print results
-		detections.forEach(System.out::println);
+		//detections.forEach(System.out::println);
 
 		// Free the native memory
 		freeDetectionHandler.invoke(detectionArrayStruct);

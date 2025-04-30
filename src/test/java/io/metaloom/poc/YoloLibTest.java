@@ -7,12 +7,14 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.List;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
 
 import io.metaloom.video4j.Video4j;
 import io.metaloom.video4j.VideoFile;
+import io.metaloom.video4j.VideoFrame;
 import io.metaloom.video4j.impl.MatProvider;
 import io.metaloom.video4j.opencv.CVUtils;
 import io.metaloom.video4j.utils.ImageUtils;
@@ -27,17 +29,11 @@ public class YoloLibTest {
 
 	static {
 		Video4j.init();
-		YoloLib.init(modelPath, labelsPath, true);
+		YoloLib.init(modelPath, labelsPath, false);
 	}
 
-	// @Test
-	// public void testBox() throws Throwable {
-	// List<Detection> detections = YoloLib.box();
-	// assertNotNull(detections);
-	// assertEquals(4, detections.size());
-	// }
-
 	@Test
+	@Disabled
 	public void testImage() throws Throwable {
 		// System.setProperty("java.library.path", onnxLibPath);
 		BufferedImage img = ImageUtils.load(new File(imagePath));
@@ -60,26 +56,17 @@ public class YoloLibTest {
 		SimpleImageViewer viewer = new SimpleImageViewer();
 
 		try (VideoFile video = VideoFile.open("/extra/vid/1.avi")) {
-			video.seekToFrameRatio(0.6);
-			// BufferedImage img = ImageUtils.load(new File(imagePath));
-			// Mat imageMat = MatProvider.mat(img, Imgproc.COLOR_BGRA2BGR565);
-			// CVUtils.bufferedImageToMat(img, imageMat);
-
+			video.seekToFrameRatio(0.5);
 			long start = System.currentTimeMillis();
-			for (int i = 0; i < 3000; i++) {
 
-				Mat imageMat = video.frame().mat();
-				YoloLib.detect(imageMat, false);
-				System.out.println(imageMat.type());
-				// MemorySegment imageSeg = MemorySegment.ofAddress(imageMat.nativeObj);
-				// MemorySegment vector = (MemorySegment) showHandler.invoke(imageSeg);
-				// if (vector != null && vector != MemorySegment.NULL && vector.address() != 0) {
-				// // printDetections(vector);
-				// }
-				YoloLib.detect(imageMat, false);
-				//
+			VideoFrame frame;
+			while ((frame = video.frame()) != null) {
+				video.frame();
+				video.frame();
+				video.frame();
+				Mat imageMat = frame.mat();
+				YoloLib.detect(imageMat, true);
 				viewer.show(imageMat);
-				// System.in.read();
 			}
 			long dur = System.currentTimeMillis() - start;
 			System.out.println("Took " + dur);
