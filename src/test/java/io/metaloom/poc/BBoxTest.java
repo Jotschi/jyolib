@@ -49,38 +49,39 @@ public class BBoxTest {
 			SymbolLookup.libraryLookup(libPath, arena).find("box").orElseThrow(),
 			FunctionDescriptor.of(ADDR));
 
-		MemorySegment vectorMem = (MemorySegment) boxHandler.invoke();
-		vectorMem = vectorMem.reinterpret(32);
-		System.out.println("Got " + vectorMem + " from function.");
+		MethodHandle freeBoxes = linker.downcallHandle(
+			SymbolLookup.libraryLookup(libPath, arena).find("free_boxes").orElseThrow(),
+			FunctionDescriptor.ofVoid(ValueLayout.ADDRESS) // accepts BoundingBoxArray*
+		);
 
-		// Extract vector fields
-		MemorySegment dataPtr = vectorMem.get(ADDR, 0); // T* data
-		dataPtr = dataPtr.reinterpret(4* ValueLayout.JAVA_INT.byteSize());
-		long size = vectorMem.get(JSIZE_T, 0); // size
-		// capacity is not needed for reading
+		MemorySegment resultStruct = (MemorySegment) boxHandler.invoke();
+		resultStruct = resultStruct.reinterpret(BoundingBoxArrayMemoryLayout.BOUNDING_BOX_ARRAY_LAYOUT.byteSize());
 
-		System.out.println("Vector size: " + size);
-		if (size == 0 || dataPtr.address() == 0) {
-			System.out.println("Vector is empty.");
-			return;
-		}
+		MemorySegment dataPtr = resultStruct.get(ValueLayout.ADDRESS, 0);
+		int count = resultStruct.get(ValueLayout.JAVA_INT, ValueLayout.ADDRESS.byteSize());
+		dataPtr = dataPtr.reinterpret(BoundingBoxMemoryLayout.BOUNDING_BOX_LAYOUT.byteSize() * count);
+
+		System.out.println("Received " + count + " bounding boxes:");
+
+		System.out.println("Got " + resultStruct + " from function.");
 
 		// Read BoundingBox elements
 		List<BoundingBox> boundingBoxes = new ArrayList<>();
-		long structSize = 4 * JINT.byteSize(); // 4 int fields
-
-		for (long i = 0; i < size; i++) {
-			MemorySegment element = dataPtr.asSlice(i * structSize, structSize);
-			int x = element.get(JINT, 0);
-			int y = element.get(JINT, JINT.byteSize());
-			int width = element.get(JINT, 2 * JINT.byteSize());
-			int height = element.get(JINT, 3 * JINT.byteSize());
-
+		long structSize = BoundingBoxMemoryLayout.BOUNDING_BOX_LAYOUT.byteSize();
+		for (long i = 0; i < count; i++) {
+			MemorySegment boxMemory = dataPtr.asSlice(i * structSize, structSize);
+			System.out.println("Read " + i);
+			int x = boxMemory.get(JINT, 0);
+			int y = boxMemory.get(JINT, JINT.byteSize());
+			int width = boxMemory.get(JINT, 2 * JINT.byteSize());
+			int height = boxMemory.get(JINT, 3 * JINT.byteSize());
 			boundingBoxes.add(new BoundingBox(x, y, width, height));
 		}
 
 		// Print results
 		boundingBoxes.forEach(System.out::println);
 
+		// Free the native memory
+		freeBoxes.invoke(resultStruct);
 	}
 }

@@ -24,11 +24,29 @@ extern "C" void initialize()
     }
 }
 
-extern "C" std::vector<BoundingBox>* box() {
-    std::vector<BoundingBox>* bboxVec = new std::vector<BoundingBox>();
-    bboxVec->emplace_back(42,41,40,39);
-    bboxVec->emplace_back(1,2,3,4);
-    return bboxVec;
+
+extern "C" void free_boxes(BoundingBoxArray* arr) {
+    if (arr) {
+        delete[] arr->data;
+        delete arr;
+    }
+}
+
+extern "C" BoundingBoxArray* box() {
+    std::vector<BoundingBox> tempVec;
+    tempVec.push_back({42, 41, 40, 39});
+    tempVec.push_back({1, 2, 3, 4});
+    tempVec.push_back({5, 2, 3, 4});
+
+    // Allocate memory for BoundingBoxArray
+    BoundingBoxArray* result = new BoundingBoxArray;
+
+    // Allocate memory for the BoundingBox array and copy data
+    result->count = static_cast<int>(tempVec.size());
+    result->data = new BoundingBox[result->count];
+    std::copy(tempVec.begin(), tempVec.end(), result->data);
+
+    return result;
 }
 
     //BoundingBox* bbox =new BoundingBox(42,41,40,39);;
@@ -37,8 +55,8 @@ extern "C" std::vector<BoundingBox>* box() {
     //printf("Lib: box val is %i\n", bbox->height);
     //fflush(stdout);
 // std::vector<Detection>*
-extern "C" BoundingBox detect(cv::Mat *imagePtr)
-{
+
+extern "C" BoundingBox detect(cv::Mat *imagePtr) {
 
     initialize();
 
@@ -62,14 +80,11 @@ extern "C" BoundingBox detect(cv::Mat *imagePtr)
     // cv::imshow("Detections", image);
     // cv::waitKey(0); // Wait for a key press to close the window
     // std::vector<BoundingBox> boxes;
-    if (results.empty())
-    {
+    if (results.empty()) {
         //return nullptr;
         // return boxes.dat
         return BoundingBox();
-    }
-    else
-    {
+    } else {
         detector->drawBoundingBox(image, results);
         std::cerr << "Lib: Size:" << results.size() << " " << sizeof(results.front().box) << " ADDR " << std::endl;
         printf("Lib: box addr is %p\n", results.front().box);
