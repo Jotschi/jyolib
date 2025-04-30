@@ -14,9 +14,11 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.jupiter.api.Test;
+import org.opencv.core.Mat;
 
-public class BBoxTest {
+import io.metaloom.video4j.utils.ImageUtils;
+
+public class YoloLib {
 
 	private static String libPath = "yolib/build/libyolib.so.1.0.0";
 
@@ -27,24 +29,9 @@ public class BBoxTest {
 	static final OfInt JINT = ValueLayout.JAVA_INT.withOrder(ByteOrder.nativeOrder());
 	static final OfLong JSIZE_T = ValueLayout.JAVA_LONG.withOrder(ByteOrder.nativeOrder()); // size_t on 64-bit Linux
 
-	static class BoundingBox {
-		int x, y, width, height;
+	private static SymbolLookup yoloLibrary;
 
-		BoundingBox(int x, int y, int width, int height) {
-			this.x = x;
-			this.y = y;
-			this.width = width;
-			this.height = height;
-		}
-
-		@Override
-		public String toString() {
-			return "BoundingBox{x=" + x + ", y=" + y + ", width=" + width + ", height=" + height + "}";
-		}
-	}
-
-	@Test
-	public void testBbox() throws Throwable {
+	public static List<BoundingBox> box() throws Throwable {
 		MethodHandle boxHandler = linker.downcallHandle(
 			SymbolLookup.libraryLookup(libPath, arena).find("box").orElseThrow(),
 			FunctionDescriptor.of(ADDR));
@@ -83,5 +70,30 @@ public class BBoxTest {
 
 		// Free the native memory
 		freeBoxes.invoke(resultStruct);
+		return boundingBoxes;
+	}
+
+	public static void init() {
+		yoloLibrary = SymbolLookup.libraryLookup(libPath, arena);
+
+	}
+
+	public static List<BoundingBox> detect(Mat imageMat) throws Throwable {
+		MethodHandle detectHandler = linker
+			.downcallHandle(
+				yoloLibrary.findOrThrow("detect"),
+				FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+		MemorySegment imageSeg = MemorySegment.ofAddress(imageMat.getNativeObjAddr());
+		MemorySegment addr = (MemorySegment) detectHandler.invoke(imageSeg);
+		addr = addr.reinterpret(8);
+		ImageUtils.show(imageMat);
+		// System.out.println("FFM@" + addr.getAtIndex(OfInt.JAVA_INT, 0));
+		// System.out.println("FFM2@" + addr.get(ValueLayout.JAVA_INT, 0));
+		// System.out.println("FFM2@" + addr.get(ValueLayout.JAVA_INT, 4));
+		// System.out.println("FFM2@" + addr.get(ValueLayout.JAVA_INT, 8));
+		// System.out.println("FFM2@" + addr.get(ValueLayout.JAVA_INT, 12));
+		return null;
+		
 	}
 }

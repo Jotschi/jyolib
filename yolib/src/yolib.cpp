@@ -14,16 +14,13 @@ static std::unique_ptr<YOLO12Detector> globalDetector;
 
 static bool initialized = false;
 
-extern "C" void initialize()
-{
+extern "C" void initialize() {
     bool isGPU = true;
-    if (!initialized)
-    {
+    if (!initialized) {
         globalDetector = std::make_unique<YOLO12Detector>(modelPath, labelsPath, isGPU);
         initialized = true;
     }
 }
-
 
 extern "C" void free_boxes(BoundingBoxArray* arr) {
     if (arr) {
