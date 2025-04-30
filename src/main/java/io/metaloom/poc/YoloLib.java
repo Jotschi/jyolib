@@ -1,5 +1,6 @@
 package io.metaloom.poc;
 
+import java.io.IOException;
 import java.lang.foreign.AddressLayout;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
@@ -11,6 +12,9 @@ import java.lang.foreign.ValueLayout.OfInt;
 import java.lang.foreign.ValueLayout.OfLong;
 import java.lang.invoke.MethodHandle;
 import java.nio.ByteOrder;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,17 +47,19 @@ public class YoloLib {
 
 	private static boolean initialized = false;
 
-	public static List<Detection> box() throws Throwable {
-		checkInitialized();
-		MethodHandle detectTestHandler = linker.downcallHandle(
-			SymbolLookup.libraryLookup(libPath, arena).find("detect_test").orElseThrow(),
-			FunctionDescriptor.of(ADDR));
+	private static List<String> labels;
 
-		MemorySegment detectionArrayStruct = (MemorySegment) detectTestHandler.invoke();
-
-		return mapDetectionsArray(detectionArrayStruct);
-
-	}
+	// public static List<Detection> box() throws Throwable {
+	// checkInitialized();
+	// MethodHandle detectTestHandler = linker.downcallHandle(
+	// SymbolLookup.libraryLookup(libPath, arena).find("detect_test").orElseThrow(),
+	// FunctionDescriptor.of(ADDR));
+	//
+	// MemorySegment detectionArrayStruct = (MemorySegment) detectTestHandler.invoke();
+	//
+	// return mapDetectionsArray(detectionArrayStruct);
+	//
+	// }
 
 	private static void checkInitialized() {
 		if (!initialized) {
@@ -102,7 +108,23 @@ public class YoloLib {
 
 	}
 
-	public static void init(String modelPath, String labelsPath, boolean useGPU) throws RuntimeException {
+	public static void init(String modelPath, String labelsPath, boolean useGPU) {
+		Path mPath = Paths.get(modelPath);
+		if (!Files.exists(mPath)) {
+			throw new RuntimeException("Unable to locate model with path " + mPath);
+		}
+
+		Path lPath = Paths.get(labelsPath);
+		if (!Files.exists(lPath)) {
+			throw new RuntimeException("Unable to locate labels file with path " + lPath);
+		}
+
+		try {
+			labels = loadLabels(lPath);
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to read labels from " + lPath);
+		}
+
 		yoloLibrary = SymbolLookup.libraryLookup(libPath, arena);
 		MethodHandle initHandler = linker
 			.downcallHandle(
@@ -117,6 +139,10 @@ public class YoloLib {
 		} catch (Throwable t) {
 			throw new RuntimeException("Failed to initialize YoloLib", t);
 		}
+	}
+
+	private static List<String> loadLabels(Path path) throws IOException {
+		return Files.readAllLines(path);
 	}
 
 	public static List<Detection> detect(Mat imageMat, boolean drawBoundingBoxes) throws Throwable {
@@ -134,5 +160,13 @@ public class YoloLib {
 
 		return results;
 
+	}
+
+	public static String toLabel(Detection detection) {
+		int clazzId = detection.classId();
+		if (clazzId < 1 || clazzId > labels.size()) {
+			return null;
+		}
+		return labels.get(detection.classId());
 	}
 }

@@ -30,12 +30,12 @@ public class YoloLibTest {
 		YoloLib.init(modelPath, labelsPath, true);
 	}
 
-	@Test
-	public void testBox() throws Throwable {
-		List<Detection> detections = YoloLib.box();
-		assertNotNull(detections);
-		assertEquals(4, detections.size());
-	}
+	// @Test
+	// public void testBox() throws Throwable {
+	// List<Detection> detections = YoloLib.box();
+	// assertNotNull(detections);
+	// assertEquals(4, detections.size());
+	// }
 
 	@Test
 	public void testImage() throws Throwable {
@@ -47,6 +47,11 @@ public class YoloLibTest {
 		assertNotNull(detections);
 		assertEquals(3, detections.size());
 		ImageUtils.show(imageMat);
+
+		for (Detection detection : detections) {
+			System.out.println(detection.label() + " conf: " + detection.conf());
+		}
+
 		System.in.read();
 	}
 
