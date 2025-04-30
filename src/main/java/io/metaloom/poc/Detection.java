@@ -1,5 +1,5 @@
 package io.metaloom.poc;
 
-public record Detection(int x, int y, int width, int height, float conf, int classId) {
+public record Detection(BoundingBox box, float conf, int classId) {
 
 }

@@ -31,46 +31,46 @@ public class YoloLib {
 
 	private static SymbolLookup yoloLibrary;
 
-	public static List<BoundingBox> box() throws Throwable {
-		MethodHandle boxHandler = linker.downcallHandle(
-			SymbolLookup.libraryLookup(libPath, arena).find("box").orElseThrow(),
+	public static List<Detection> box() throws Throwable {
+		MethodHandle detectTestHandler = linker.downcallHandle(
+			SymbolLookup.libraryLookup(libPath, arena).find("detect_test").orElseThrow(),
 			FunctionDescriptor.of(ADDR));
 
-		MethodHandle freeBoxes = linker.downcallHandle(
-			SymbolLookup.libraryLookup(libPath, arena).find("free_boxes").orElseThrow(),
-			FunctionDescriptor.ofVoid(ValueLayout.ADDRESS) // accepts BoundingBoxArray*
-		);
+		MethodHandle freeDetectionHandler = linker.downcallHandle(
+			SymbolLookup.libraryLookup(libPath, arena).find("free_detection").orElseThrow(),
+			FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		MemorySegment resultStruct = (MemorySegment) boxHandler.invoke();
-		resultStruct = resultStruct.reinterpret(BoundingBoxArrayMemoryLayout.BOUNDING_BOX_ARRAY_LAYOUT.byteSize());
+		MemorySegment detectionArrayStruct = (MemorySegment) detectTestHandler.invoke();
+		detectionArrayStruct = detectionArrayStruct.reinterpret(DetectionArrayMemoryLayout.size());
 
-		MemorySegment dataPtr = resultStruct.get(ValueLayout.ADDRESS, 0);
-		int count = resultStruct.get(ValueLayout.JAVA_INT, ValueLayout.ADDRESS.byteSize());
-		dataPtr = dataPtr.reinterpret(BoundingBoxMemoryLayout.BOUNDING_BOX_LAYOUT.byteSize() * count);
+		MemorySegment dataPtr = detectionArrayStruct.get(ValueLayout.ADDRESS, 0);
+		int detectionCount = detectionArrayStruct.get(ValueLayout.JAVA_INT, ValueLayout.ADDRESS.byteSize());
+		dataPtr = dataPtr.reinterpret(DetectionMemoryLayout.size() * detectionCount);
 
-		System.out.println("Received " + count + " bounding boxes:");
-
-		System.out.println("Got " + resultStruct + " from function.");
+		System.out.println("Received " + detectionCount + " detections");
+		System.out.println("Got " + detectionArrayStruct + " from function.");
 
 		// Read BoundingBox elements
-		List<BoundingBox> boundingBoxes = new ArrayList<>();
-		long structSize = BoundingBoxMemoryLayout.BOUNDING_BOX_LAYOUT.byteSize();
-		for (long i = 0; i < count; i++) {
-			MemorySegment boxMemory = dataPtr.asSlice(i * structSize, structSize);
-			System.out.println("Read " + i);
-			int x = boxMemory.get(JINT, 0);
-			int y = boxMemory.get(JINT, JINT.byteSize());
-			int width = boxMemory.get(JINT, 2 * JINT.byteSize());
-			int height = boxMemory.get(JINT, 3 * JINT.byteSize());
-			boundingBoxes.add(new BoundingBox(x, y, width, height));
+		List<Detection> detections = new ArrayList<>();
+		long structSize = DetectionMemoryLayout.size();
+		for (long i = 0; i < detectionCount; i++) {
+			MemorySegment detectionMemory = dataPtr.asSlice(i * structSize, structSize);
+			float conf = DetectionMemoryLayout.getConf(detectionMemory);
+			int clazz = DetectionMemoryLayout.getClassId(detectionMemory);
+			int x = detectionMemory.get(JINT, 0);
+			int y = detectionMemory.get(JINT, JINT.byteSize());
+			int width = detectionMemory.get(JINT, 2 * JINT.byteSize());
+			int height = detectionMemory.get(JINT, 3 * JINT.byteSize());
+			BoundingBox bbox = new BoundingBox(x, y, width, height);
+			detections.add(new Detection(bbox, conf, clazz));
 		}
 
 		// Print results
-		boundingBoxes.forEach(System.out::println);
+		detections.forEach(System.out::println);
 
 		// Free the native memory
-		freeBoxes.invoke(resultStruct);
-		return boundingBoxes;
+		freeDetectionHandler.invoke(detectionArrayStruct);
+		return detections;
 	}
 
 	public static void init() {
@@ -94,6 +94,6 @@ public class YoloLib {
 		// System.out.println("FFM2@" + addr.get(ValueLayout.JAVA_INT, 8));
 		// System.out.println("FFM2@" + addr.get(ValueLayout.JAVA_INT, 12));
 		return null;
-		
+
 	}
 }

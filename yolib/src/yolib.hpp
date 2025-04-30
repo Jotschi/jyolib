@@ -9,4 +9,10 @@ typedef struct {
     int count;          // number of BoundingBoxes
 } BoundingBoxArray;
 
+typedef struct {
+    Detection* data;  // pointer to dynamically allocated Detection array
+    int count;          // number of Detections
+} DetectionArray;
+
+
 #endif // YOLO12_HPP

@@ -29,9 +29,9 @@ public class YoloLibTest {
 
 	@Test
 	public void testBox() throws Throwable {
-		List<BoundingBox> detections = YoloLib.box();
+		List<Detection> detections = YoloLib.box();
 		assertNotNull(detections);
-		assertEquals(3, detections.size());
+		assertEquals(4, detections.size());
 	}
 
 	@Test

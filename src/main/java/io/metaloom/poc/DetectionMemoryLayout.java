@@ -29,4 +29,8 @@ public class DetectionMemoryLayout {
 		return (int) CLASS_ID_HANDLE.get(segment, 0);
 	}
 
+	public static long size() {
+		return DETECTION_LAYOUT.byteSize();
+	}
+
 }

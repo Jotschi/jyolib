@@ -14,46 +14,49 @@ static std::unique_ptr<YOLO12Detector> globalDetector;
 
 static bool initialized = false;
 
-extern "C" void initialize() {
+extern "C" void initialize()
+{
     bool isGPU = true;
-    if (!initialized) {
+    if (!initialized)
+    {
         globalDetector = std::make_unique<YOLO12Detector>(modelPath, labelsPath, isGPU);
         initialized = true;
     }
 }
 
-extern "C" void free_boxes(BoundingBoxArray* arr) {
-    if (arr) {
+extern "C" void free_detection(DetectionArray *arr)
+{
+    if (arr)
+    {
         delete[] arr->data;
         delete arr;
     }
 }
 
-extern "C" BoundingBoxArray* box() {
-    std::vector<BoundingBox> tempVec;
-    tempVec.push_back({42, 41, 40, 39});
-    tempVec.push_back({1, 2, 3, 4});
-    tempVec.push_back({5, 2, 3, 4});
+extern "C" DetectionArray *detect_test()
+{
+    std::vector<Detection> tempVec;
 
-    // Allocate memory for BoundingBoxArray
-    BoundingBoxArray* result = new BoundingBoxArray;
+    for (int i = 0; i < 4; i++)
+    {
+        BoundingBox bbox = {42 + i, 41, 40, 39-i};
+        Detection *d = new Detection;
+        d->box = bbox;
+        d->conf = 2.0f + i;
+        d->classId = 11 + i;
+        tempVec.push_back(*d);
+    }
 
-    // Allocate memory for the BoundingBox array and copy data
+    DetectionArray *result = new DetectionArray;
     result->count = static_cast<int>(tempVec.size());
-    result->data = new BoundingBox[result->count];
+    result->data = new Detection[result->count];
     std::copy(tempVec.begin(), tempVec.end(), result->data);
 
     return result;
 }
 
-    //BoundingBox* bbox =new BoundingBox(42,41,40,39);;
-    //printf("Lib: box addr is %p\n", (void*)bbox);
-    //printf("Lib: box size is %i\n", sizeof(*bbox));
-    //printf("Lib: box val is %i\n", bbox->height);
-    //fflush(stdout);
-// std::vector<Detection>*
-
-extern "C" BoundingBox detect(cv::Mat *imagePtr) {
+extern "C" BoundingBoxArray *detect(cv::Mat *imagePtr, bool drawBoundingBox)
+{
 
     initialize();
 
@@ -72,29 +75,39 @@ extern "C" BoundingBox detect(cv::Mat *imagePtr) {
 
     // Draw bounding boxes on the image
     // detector.drawBoundingBoxMask(image, results); // Uncomment for mask drawing
-
     // Display the image
     // cv::imshow("Detections", image);
     // cv::waitKey(0); // Wait for a key press to close the window
     // std::vector<BoundingBox> boxes;
-    if (results.empty()) {
-        //return nullptr;
-        // return boxes.dat
-        return BoundingBox();
-    } else {
-        detector->drawBoundingBox(image, results);
+    BoundingBoxArray *result = new BoundingBoxArray;
+    if (results.empty())
+    {
+        result->count = 0;
+        return result;
+    }
+    else
+    {
+        if (drawBoundingBox)
+        {
+            detector->drawBoundingBox(image, results);
+        }
+
+        result->count = static_cast<int>(results.size());
+        result->data = new BoundingBox[result->count];
+        // std::copy(results.begin(), results.end(), result->data);
+
         std::cerr << "Lib: Size:" << results.size() << " " << sizeof(results.front().box) << " ADDR " << std::endl;
         printf("Lib: box addr is %p\n", results.front().box);
-        //fflush(stdout);
-        BoundingBox box = results.front().box;
-        printf("Lib: box: %i:%i - %ix%i\n", box.x, box.y, box.width, box.height);
-        //fflush(stdout);
-        std::vector<BoundingBox> boxes;
-        boxes.push_back(box);
-        printf("Lib: data addr is %p\n", boxes.data());
-        printf("Lib: data size is %p\n", sizeof(boxes.data()));
+        // fflush(stdout);
+        // fflush(stdout);
+        // std::vector<BoundingBox> boxes;
+        // boxes.push_back(box);
+        // BoundingBox box = results.front().box;
+        // printf("Lib: box: %i:%i - %ix%i\n", box.x, box.y, box.width, box.height);
+        // printf("Lib: data addr is %p\n", boxes.data());
+        // printf("Lib: data size is %p\n", sizeof(boxes.data()));
         fflush(stdout);
-        //return boxes.data();
-         return box;
+        // return boxes.data();
+        return result;
     }
 }
