@@ -15,10 +15,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.opencv.core.Mat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import io.metaloom.video4j.utils.ImageUtils;
+import io.metaloom.poc.layout.DetectionArrayMemoryLayout;
+import io.metaloom.poc.layout.DetectionMemoryLayout;
 
 public class YoloLib {
+
+	private static final Logger logger = LoggerFactory.getLogger(YoloLib.class);
+
+	// private static String onnxLibFileName = "libonnxruntime.so.1.20.1";
+	// private static String onnxLibName = "onnxruntime";
+	// private static String onnxLibPath = "YOLOs-CPP/onnxruntime-linux-x64-1.20.1/lib/";
+	// private static String onnxLib = "libonnxruntime.so.1.20.1";
 
 	private static String libPath = "yolib/build/libyolib.so.1.0.0";
 
@@ -31,24 +41,42 @@ public class YoloLib {
 
 	private static SymbolLookup yoloLibrary;
 
+	private static boolean initialized = false;
+
 	public static List<Detection> box() throws Throwable {
+		checkInitialized();
 		MethodHandle detectTestHandler = linker.downcallHandle(
 			SymbolLookup.libraryLookup(libPath, arena).find("detect_test").orElseThrow(),
 			FunctionDescriptor.of(ADDR));
+
+		MemorySegment detectionArrayStruct = (MemorySegment) detectTestHandler.invoke();
+
+		return mapDetectionsArray(detectionArrayStruct);
+
+	}
+
+	private static void checkInitialized() {
+		if (!initialized) {
+			throw new RuntimeException("YoloLib not initialized");
+		}
+	}
+
+	private static List<Detection> mapDetectionsArray(MemorySegment detectionArrayStruct) throws Throwable {
 
 		MethodHandle freeDetectionHandler = linker.downcallHandle(
 			SymbolLookup.libraryLookup(libPath, arena).find("free_detection").orElseThrow(),
 			FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-		MemorySegment detectionArrayStruct = (MemorySegment) detectTestHandler.invoke();
 		detectionArrayStruct = detectionArrayStruct.reinterpret(DetectionArrayMemoryLayout.size());
 
 		MemorySegment dataPtr = detectionArrayStruct.get(ValueLayout.ADDRESS, 0);
 		int detectionCount = detectionArrayStruct.get(ValueLayout.JAVA_INT, ValueLayout.ADDRESS.byteSize());
 		dataPtr = dataPtr.reinterpret(DetectionMemoryLayout.size() * detectionCount);
 
-		System.out.println("Received " + detectionCount + " detections");
-		System.out.println("Got " + detectionArrayStruct + " from function.");
+		if (logger.isDebugEnabled()) {
+			logger.debug("Received " + detectionCount + " detections");
+			logger.debug("Got " + detectionArrayStruct + " from function.");
+		}
 
 		// Read BoundingBox elements
 		List<Detection> detections = new ArrayList<>();
@@ -71,29 +99,40 @@ public class YoloLib {
 		// Free the native memory
 		freeDetectionHandler.invoke(detectionArrayStruct);
 		return detections;
+
 	}
 
-	public static void init() {
+	public static void init(String modelPath, String labelsPath, boolean useGPU) throws RuntimeException {
 		yoloLibrary = SymbolLookup.libraryLookup(libPath, arena);
+		MethodHandle initHandler = linker
+			.downcallHandle(
+				yoloLibrary.findOrThrow("initialize"),
+				FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_BOOLEAN));
 
+		try (Arena arena = Arena.ofConfined()) {
+			MemorySegment labelsPathMem = arena.allocateFrom(labelsPath);
+			MemorySegment modelPathMem = arena.allocateFrom(modelPath);
+			initHandler.invoke(labelsPathMem, modelPathMem, useGPU);
+			initialized = true;
+		} catch (Throwable t) {
+			throw new RuntimeException("Failed to initialize YoloLib", t);
+		}
 	}
 
-	public static List<BoundingBox> detect(Mat imageMat) throws Throwable {
+	public static List<Detection> detect(Mat imageMat, boolean drawBoundingBoxes) throws Throwable {
+		checkInitialized();
+
 		MethodHandle detectHandler = linker
 			.downcallHandle(
 				yoloLibrary.findOrThrow("detect"),
-				FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+				FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_BOOLEAN));
 
 		MemorySegment imageSeg = MemorySegment.ofAddress(imageMat.getNativeObjAddr());
-		MemorySegment addr = (MemorySegment) detectHandler.invoke(imageSeg);
-		addr = addr.reinterpret(8);
-		ImageUtils.show(imageMat);
-		// System.out.println("FFM@" + addr.getAtIndex(OfInt.JAVA_INT, 0));
-		// System.out.println("FFM2@" + addr.get(ValueLayout.JAVA_INT, 0));
-		// System.out.println("FFM2@" + addr.get(ValueLayout.JAVA_INT, 4));
-		// System.out.println("FFM2@" + addr.get(ValueLayout.JAVA_INT, 8));
-		// System.out.println("FFM2@" + addr.get(ValueLayout.JAVA_INT, 12));
-		return null;
+		MemorySegment detectionArrayStruct = (MemorySegment) detectHandler.invoke(imageSeg, drawBoundingBoxes);
+
+		List<Detection> results = mapDetectionsArray(detectionArrayStruct);
+
+		return results;
 
 	}
 }

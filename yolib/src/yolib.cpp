@@ -1,25 +1,32 @@
 #include <string>
 #include "det/YOLO12.hpp"
 #include "yolib.hpp"
+#include <string.h>
 
 // For Test code
 #include <iostream>
 #include <string>
 #include <memory>
 
-const std::string labelsPath = "YOLOs-CPP/models/coco.names";
-const std::string modelPath = "YOLOs-CPP/models/yolo8n.onnx"; // YOLOv12
+//const std::string labelsPath = "YOLOs-CPP/models/coco.names";
+//const std::string modelPath = "YOLOs-CPP/models/yolo8n.onnx"; // YOLOv12
 
 static std::unique_ptr<YOLO12Detector> globalDetector;
 
 static bool initialized = false;
 
-extern "C" void initialize()
+extern "C" void test_str(const char* name, const char* name2) {
+    printf("Test %s - %s\n", name, name2);
+    fflush(stdout);
+}
+
+extern "C" void initialize(const char* labelsPath, const char* modelPath, bool useGPU)
 {
-    bool isGPU = true;
     if (!initialized)
     {
-        globalDetector = std::make_unique<YOLO12Detector>(modelPath, labelsPath, isGPU);
+        printf("Initializing YoloLib using model %s - labels %s - Using GPU: %s\n", modelPath, labelsPath, useGPU ? "true" : "false");
+        fflush(stdout);
+        globalDetector = std::make_unique<YOLO12Detector>(modelPath, labelsPath, useGPU);
         initialized = true;
     }
 }
@@ -39,7 +46,7 @@ extern "C" DetectionArray *detect_test()
 
     for (int i = 0; i < 4; i++)
     {
-        BoundingBox bbox = {42 + i, 41, 40, 39-i};
+        BoundingBox bbox = {42 + i, 41, 40, 39 - i};
         Detection *d = new Detection;
         d->box = bbox;
         d->conf = 2.0f + i;
@@ -55,10 +62,10 @@ extern "C" DetectionArray *detect_test()
     return result;
 }
 
-extern "C" BoundingBoxArray *detect(cv::Mat *imagePtr, bool drawBoundingBox)
+extern "C" DetectionArray *detect(cv::Mat *imagePtr, bool drawBoundingBox)
 {
 
-    initialize();
+    //initialize();
 
     YOLO12Detector *detector = globalDetector.get();
     cv::Mat image = *imagePtr;
@@ -79,7 +86,7 @@ extern "C" BoundingBoxArray *detect(cv::Mat *imagePtr, bool drawBoundingBox)
     // cv::imshow("Detections", image);
     // cv::waitKey(0); // Wait for a key press to close the window
     // std::vector<BoundingBox> boxes;
-    BoundingBoxArray *result = new BoundingBoxArray;
+    DetectionArray *result = new DetectionArray;
     if (results.empty())
     {
         result->count = 0;
@@ -93,8 +100,8 @@ extern "C" BoundingBoxArray *detect(cv::Mat *imagePtr, bool drawBoundingBox)
         }
 
         result->count = static_cast<int>(results.size());
-        result->data = new BoundingBox[result->count];
-        // std::copy(results.begin(), results.end(), result->data);
+        result->data = new Detection[result->count];
+        std::copy(results.begin(), results.end(), result->data);
 
         std::cerr << "Lib: Size:" << results.size() << " " << sizeof(results.front().box) << " ADDR " << std::endl;
         printf("Lib: box addr is %p\n", results.front().box);

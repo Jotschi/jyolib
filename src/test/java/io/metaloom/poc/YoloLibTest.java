@@ -22,9 +22,12 @@ public class YoloLibTest {
 
 	private static String imagePath = "YOLOs-CPP/data/kitchen.jpg";
 
+	private static String labelsPath = "YOLOs-CPP/models/coco.names";
+	private static String modelPath = "YOLOs-CPP/models/yolo8n.onnx";
+
 	static {
 		Video4j.init();
-		YoloLib.init();
+		YoloLib.init(modelPath, labelsPath, true);
 	}
 
 	@Test
@@ -40,7 +43,10 @@ public class YoloLibTest {
 		BufferedImage img = ImageUtils.load(new File(imagePath));
 		Mat imageMat = MatProvider.mat(img, Imgproc.COLOR_BGRA2BGR565);
 		CVUtils.bufferedImageToMat(img, imageMat);
-		YoloLib.detect(imageMat);
+		List<Detection> detections = YoloLib.detect(imageMat, true);
+		assertNotNull(detections);
+		assertEquals(3, detections.size());
+		ImageUtils.show(imageMat);
 		System.in.read();
 	}
 
@@ -58,14 +64,15 @@ public class YoloLibTest {
 			for (int i = 0; i < 3000; i++) {
 
 				Mat imageMat = video.frame().mat();
-				YoloLib.detect(imageMat);
+				YoloLib.detect(imageMat, false);
 				System.out.println(imageMat.type());
 				// MemorySegment imageSeg = MemorySegment.ofAddress(imageMat.nativeObj);
 				// MemorySegment vector = (MemorySegment) showHandler.invoke(imageSeg);
 				// if (vector != null && vector != MemorySegment.NULL && vector.address() != 0) {
 				// // printDetections(vector);
 				// }
-				YoloLib.detect(imageMat);
+				YoloLib.detect(imageMat, false);
+				//
 				viewer.show(imageMat);
 				// System.in.read();
 			}
