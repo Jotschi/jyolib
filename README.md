@@ -19,7 +19,7 @@ Currently only AMD64 Linux is supported. Support for other platforms is not plan
 </dependency>
 ```
 
-Example
+Image Example
 ```java
 String imagePath = "YOLOs-CPP/data/kitchen.jpg";
 boolean useGPU = true;
@@ -35,6 +35,40 @@ List<Detection> detections = YoloLib.detect(img, false);
 // Print the detections
 for (Detection detection : detections) {
 	System.out.println(detection.label() + " = " + detection.conf() + " @ " + detection.box());
+}
+```
+
+
+Video Example
+```java
+boolean useGPU = true;
+
+// Initialize video4j and YoloLib (Video4j is used to handle OpenCV Mat)
+Video4j.init();
+YoloLib.init("YOLOs-CPP/models/yolo8n.onnx", "YOLOs-CPP/models/coco.names", useGPU);
+SimpleImageViewer viewer = new SimpleImageViewer();
+
+// Open the video using Video4j
+try (VideoFile video = VideoFile.open("/extra/vid/1.avi")) {
+
+	// Seek to the middle of the video
+	video.seekToFrameRatio(0.5);
+
+	// Process each frame
+	VideoFrame frame;
+	while ((frame = video.frame()) != null) {
+
+		// Run the detection on the mat reference
+		List<Detection> detections = YoloLib.detect(frame.mat(), true);
+
+		// Print the detections
+		for (Detection detection : detections) {
+			System.out
+				.println("Frame[" + video.currentFrame() + "] " + detection.label() + " = " + detection.conf() + " @ " + detection.box());
+		}
+
+		viewer.show(frame.mat());
+	}
 }
 ```
 

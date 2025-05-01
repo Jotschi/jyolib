@@ -10,13 +10,16 @@ import org.junit.jupiter.api.Test;
 import io.metaloom.jyolib.Detection;
 import io.metaloom.jyolib.YoloLib;
 import io.metaloom.video4j.Video4j;
+import io.metaloom.video4j.VideoFile;
+import io.metaloom.video4j.VideoFrame;
 import io.metaloom.video4j.utils.ImageUtils;
+import io.metaloom.video4j.utils.SimpleImageViewer;
 
 public class UsageExampleTest {
 
 	@Test
-	public void testUsageExample() throws IOException {
-		// SNIPPET START usage.example
+	public void testImageUsageExample() throws IOException {
+		// SNIPPET START image-usage.example
 		String imagePath = "YOLOs-CPP/data/kitchen.jpg";
 		boolean useGPU = true;
 
@@ -32,7 +35,42 @@ public class UsageExampleTest {
 		for (Detection detection : detections) {
 			System.out.println(detection.label() + " = " + detection.conf() + " @ " + detection.box());
 		}
-		// SNIPPET END usage.example
+		// SNIPPET END image-usage.example
+	}
+
+	@Test
+	public void testVideoUsageExample() throws IOException {
+		// SNIPPET START video-usage.example
+		boolean useGPU = true;
+
+		// Initialize video4j and YoloLib (Video4j is used to handle OpenCV Mat)
+		Video4j.init();
+		YoloLib.init("YOLOs-CPP/models/yolo8n.onnx", "YOLOs-CPP/models/coco.names", useGPU);
+		SimpleImageViewer viewer = new SimpleImageViewer();
+
+		// Open the video using Video4j
+		try (VideoFile video = VideoFile.open("/extra/vid/1.avi")) {
+
+			// Seek to the middle of the video
+			video.seekToFrameRatio(0.5);
+
+			// Process each frame
+			VideoFrame frame;
+			while ((frame = video.frame()) != null) {
+
+				// Run the detection on the mat reference
+				List<Detection> detections = YoloLib.detect(frame.mat(), true);
+
+				// Print the detections
+				for (Detection detection : detections) {
+					System.out
+						.println("Frame[" + video.currentFrame() + "] " + detection.label() + " = " + detection.conf() + " @ " + detection.box());
+				}
+
+				viewer.show(frame.mat());
+			}
+		}
+		// SNIPPET END video-usage.example
 	}
 
 }

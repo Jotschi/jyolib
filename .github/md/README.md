@@ -19,9 +19,15 @@ Currently only AMD64 Linux is supported. Support for other platforms is not plan
 </dependency>
 ```
 
-Example
+Image Example
 ```java
-%{snippet|id=usage.example|file=src/test/java/io/metaloom/jyolib/example/UsageExampleTest.java}
+%{snippet|id=image-usage.example|file=src/test/java/io/metaloom/jyolib/example/UsageExampleTest.java}
+```
+
+
+Video Example
+```java
+%{snippet|id=video-usage.example|file=src/test/java/io/metaloom/jyolib/example/UsageExampleTest.java}
 ```
 
 
