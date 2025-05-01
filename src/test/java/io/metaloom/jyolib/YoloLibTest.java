@@ -1,4 +1,4 @@
-package io.metaloom.poc;
+package io.metaloom.jyolib;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -7,7 +7,6 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.List;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
@@ -33,7 +32,6 @@ public class YoloLibTest {
 	}
 
 	@Test
-	@Disabled
 	public void testImage() throws Throwable {
 		// System.setProperty("java.library.path", onnxLibPath);
 		BufferedImage img = ImageUtils.load(new File(imagePath));

@@ -15,27 +15,13 @@ Currently only AMD64 Linux is supported. Support for other platforms is not plan
 <dependency>
   <groupId>io.metaloom.jyolib</groupId>
   <artifactId>jyolib</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>${project.version}</version>
 </dependency>
 ```
 
 Example
 ```java
-String imagePath = "YOLOs-CPP/data/kitchen.jpg";
-boolean useGPU = true;
-
-// Initialize video4j and YoloLib (Video4j is used to handle OpenCV Mat)
-Video4j.init();
-YoloLib.init("YOLOs-CPP/models/yolo8n.onnx", "YOLOs-CPP/models/coco.names", useGPU);
-
-// Load the image and invoke the detection
-BufferedImage img = ImageUtils.load(new File(imagePath));
-List<Detection> detections = YoloLib.detect(img, false);
-
-// Print the detections
-for (Detection detection : detections) {
-	System.out.println(detection.label() + " = " + detection.conf() + " @ " + detection.box());
-}
+%{snippet|id=usage.example|file=src/test/java/io/metaloom/jyolib/example/UsageExampleTest.java}
 ```
 
 

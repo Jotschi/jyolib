@@ -2,8 +2,8 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>io.metaloom.poc</groupId>
-    <artifactId>yolo-cpp-ffm-poc</artifactId>
+    <groupId>io.metaloom.jyolib</groupId>
+    <artifactId>jyolib</artifactId>
     <version>0.0.1-SNAPSHOT</version>
 
     <parent>
@@ -47,6 +47,45 @@
                     <release>23</release>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <inherited>false</inherited>
+                <executions>
+                    <execution>
+                        <id>readme-md</id>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.basedir}</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.basedir}/.github/md</directory>
+                                    <includes>
+                                        <include>README.md</include>
+                                    </includes>
+                                    <filtering>true</filtering>
+                                </resource>
+                            </resources>
+                            <encoding>UTF-8</encoding>
+                            <mavenFilteringHints>
+                                <mavenFilteringHint>snippetFilter</mavenFilteringHint>
+                            </mavenFilteringHints>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>io.metaloom.maven</groupId>
+                        <artifactId>snippet-resource-filter</artifactId>
+                        <version>0.1.1</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+
         </plugins>
     </build>
 </project>

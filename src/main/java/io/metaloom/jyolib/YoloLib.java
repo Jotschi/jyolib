@@ -1,5 +1,6 @@
-package io.metaloom.poc;
+package io.metaloom.jyolib;
 
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.lang.foreign.AddressLayout;
 import java.lang.foreign.Arena;
@@ -19,11 +20,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.opencv.core.Mat;
+import org.opencv.imgproc.Imgproc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.metaloom.poc.layout.DetectionArrayMemoryLayout;
-import io.metaloom.poc.layout.DetectionMemoryLayout;
+import io.metaloom.jyolib.layout.DetectionArrayMemoryLayout;
+import io.metaloom.jyolib.layout.DetectionMemoryLayout;
+import io.metaloom.video4j.impl.MatProvider;
+import io.metaloom.video4j.opencv.CVUtils;
 
 public class YoloLib {
 
@@ -88,7 +92,7 @@ public class YoloLib {
 		}
 
 		// Print results
-		//detections.forEach(System.out::println);
+		// detections.forEach(System.out::println);
 
 		// Free the native memory
 		freeDetectionHandler.invoke(detectionArrayStruct);
@@ -133,7 +137,7 @@ public class YoloLib {
 		return Files.readAllLines(path);
 	}
 
-	public static List<Detection> detect(Mat imageMat, boolean drawBoundingBoxes) throws Throwable {
+	public static List<Detection> detect(Mat imageMat, boolean drawBoundingBoxes) {
 		checkInitialized();
 
 		MethodHandle detectHandler = linker
@@ -141,12 +145,14 @@ public class YoloLib {
 				yoloLibrary.findOrThrow("detect"),
 				FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_BOOLEAN));
 
-		MemorySegment imageSeg = MemorySegment.ofAddress(imageMat.getNativeObjAddr());
-		MemorySegment detectionArrayStruct = (MemorySegment) detectHandler.invoke(imageSeg, drawBoundingBoxes);
-
-		List<Detection> results = mapDetectionsArray(detectionArrayStruct);
-
-		return results;
+		try {
+			MemorySegment imageSeg = MemorySegment.ofAddress(imageMat.getNativeObjAddr());
+			MemorySegment detectionArrayStruct = (MemorySegment) detectHandler.invoke(imageSeg, drawBoundingBoxes);
+			List<Detection> results = mapDetectionsArray(detectionArrayStruct);
+			return results;
+		} catch (Throwable t) {
+			throw new RuntimeException("Failed to invoke detection", t);
+		}
 
 	}
 
@@ -156,5 +162,11 @@ public class YoloLib {
 			return null;
 		}
 		return labels.get(detection.classId());
+	}
+
+	public static List<Detection> detect(BufferedImage img, boolean drawBoundingBoxes) {
+		Mat imageMat = MatProvider.mat(img, Imgproc.COLOR_BGRA2BGR565);
+		CVUtils.bufferedImageToMat(img, imageMat);
+		return detect(imageMat, drawBoundingBoxes);
 	}
 }
