@@ -5,8 +5,6 @@ This jYoLib is a library which enables native access to YOLO object detection in
 
 Under the hood this library uses the Foreign Function and Memory API to hook into a custom library which uses YOLOs-CPP to run inference on OpenCV Mats which can be provided by Video4j.
 
-![VideoPlayer](video.gif)
-
 ## Limitations
 
 Currently only AMD64 Linux is supported. Support for other platforms is not planned.
@@ -50,16 +48,15 @@ Video4j.init();
 YoloLib.init("YOLOs-CPP/models/yolo8n.onnx", "YOLOs-CPP/models/coco.names", useGPU);
 SimpleImageViewer viewer = new SimpleImageViewer();
 
+boolean run = false;
 // Open the video using Video4j
-try (VideoFile video = VideoFile.open("/extra/vid/1.avi")) {
-
-	// Seek to the middle of the video
-	video.seekToFrameRatio(0.5);
+try (VideoFile video = VideoFile.open("src/test/resources/3769953-hd_1920_1080_25fps.mp4")) {
 
 	// Process each frame
 	VideoFrame frame;
 	while ((frame = video.frame()) != null) {
-
+		video.frame();
+		CVUtils.resize(frame, 1024);
 		// Run the detection on the mat reference
 		List<Detection> detections = YoloLib.detect(frame.mat(), true);
 
@@ -70,6 +67,10 @@ try (VideoFile video = VideoFile.open("/extra/vid/1.avi")) {
 		}
 
 		viewer.show(frame.mat());
+		if(!run) {
+			System.in.read();
+			run = true;
+		}
 	}
 }
 ```
