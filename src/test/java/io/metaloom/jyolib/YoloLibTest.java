@@ -53,15 +53,12 @@ public class YoloLibTest {
 	public void testVideo() throws Throwable {
 		SimpleImageViewer viewer = new SimpleImageViewer();
 
-		try (VideoFile video = VideoFile.open("/extra/vid/1.avi")) {
+		try (VideoFile video = VideoFile.open("src/test/resources/3769953-hd_1920_1080_25fps.mp4")) {
 			video.seekToFrameRatio(0.5);
 			long start = System.currentTimeMillis();
 
 			VideoFrame frame;
 			while ((frame = video.frame()) != null) {
-				video.frame();
-				video.frame();
-				video.frame();
 				Mat imageMat = frame.mat();
 				YoloLib.detect(imageMat, true);
 				viewer.show(imageMat);

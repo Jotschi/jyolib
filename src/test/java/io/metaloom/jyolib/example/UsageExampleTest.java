@@ -6,12 +6,14 @@ import java.io.IOException;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.opencv.core.Mat;
 
 import io.metaloom.jyolib.Detection;
 import io.metaloom.jyolib.YoloLib;
 import io.metaloom.video4j.Video4j;
 import io.metaloom.video4j.VideoFile;
 import io.metaloom.video4j.VideoFrame;
+import io.metaloom.video4j.opencv.CVUtils;
 import io.metaloom.video4j.utils.ImageUtils;
 import io.metaloom.video4j.utils.SimpleImageViewer;
 
@@ -48,16 +50,15 @@ public class UsageExampleTest {
 		YoloLib.init("YOLOs-CPP/models/yolo8n.onnx", "YOLOs-CPP/models/coco.names", useGPU);
 		SimpleImageViewer viewer = new SimpleImageViewer();
 
+		boolean run = false;
 		// Open the video using Video4j
-		try (VideoFile video = VideoFile.open("/extra/vid/1.avi")) {
-
-			// Seek to the middle of the video
-			video.seekToFrameRatio(0.5);
+		try (VideoFile video = VideoFile.open("src/test/resources/3769953-hd_1920_1080_25fps.mp4")) {
 
 			// Process each frame
 			VideoFrame frame;
 			while ((frame = video.frame()) != null) {
-
+				video.frame();
+				CVUtils.resize(frame, 1024);
 				// Run the detection on the mat reference
 				List<Detection> detections = YoloLib.detect(frame.mat(), true);
 
@@ -68,6 +69,10 @@ public class UsageExampleTest {
 				}
 
 				viewer.show(frame.mat());
+				if(!run) {
+					System.in.read();
+					run = true;
+				}
 			}
 		}
 		// SNIPPET END video-usage.example
