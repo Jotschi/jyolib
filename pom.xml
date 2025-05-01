@@ -11,6 +11,36 @@
         <artifactId>maven-parent</artifactId>
         <version>2.0.3-SNAPSHOT</version>
     </parent>
+    
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <name>jYoLib</name>
+    <url>https://github.com/metaloom/jyolib</url>
+    <description>A java library for native YOLO object detection</description>
+    <inceptionYear>2025</inceptionYear>
+
+    <developers>
+        <developer>
+            <id>jotschi</id>
+            <name>Johannes Schüth</name>
+            <roles>
+                <role>Maintainer</role>
+            </roles>
+            <email>git@jotschi.de</email>
+            <organization>MetaLoom</organization>
+        </developer>
+    </developers>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+            <comments>A business-friendly OSS license</comments>
+        </license>
+    </licenses>
 
     <dependencies>
         <!-- Logging -->
@@ -32,6 +62,11 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
             <scope>test</scope>
@@ -39,6 +74,15 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>${basedir}/src/main/resources/</directory>
+                <includes>
+                    <include>**/*</include>
+                </includes>
+            </resource>
+        </resources>
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

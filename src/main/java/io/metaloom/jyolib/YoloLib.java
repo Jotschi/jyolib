@@ -1,7 +1,11 @@
 package io.metaloom.jyolib;
 
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.foreign.AddressLayout;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
@@ -18,6 +22,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
@@ -38,7 +43,7 @@ public class YoloLib {
 	// private static String onnxLibPath = "YOLOs-CPP/onnxruntime-linux-x64-1.20.1/lib/";
 	// private static String onnxLib = "libonnxruntime.so.1.20.1";
 
-	private static String libPath = "yolib/build/libyolib.so.1.0.0";
+	// private static String libPath = "yolib/build/libyolib.so.1.0.0";
 
 	static final Linker linker = Linker.nativeLinker();
 	static final Arena arena = Arena.ofAuto();
@@ -62,7 +67,7 @@ public class YoloLib {
 	private static List<Detection> mapDetectionsArray(MemorySegment detectionArrayStruct) throws Throwable {
 
 		MethodHandle freeDetectionHandler = linker.downcallHandle(
-			SymbolLookup.libraryLookup(libPath, arena).find("free_detection").orElseThrow(),
+			yoloLibrary.find("free_detection").orElseThrow(),
 			FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
 		detectionArrayStruct = detectionArrayStruct.reinterpret(DetectionArrayMemoryLayout.size());
@@ -100,7 +105,43 @@ public class YoloLib {
 
 	}
 
+	private static SymbolLookup loadLib() {
+		String os = System.getProperty("os.name", "generic")
+			.toLowerCase(Locale.ENGLISH);
+		String name = System.mapLibraryName("yolib");
+
+		String libpath = "";
+		if (os.contains("linux")) {
+			libpath = "/native" + File.separator + "linux" + File.separator + name;
+		} else if (os.contains("mac")) {
+			libpath = "/native" + File.separator + "macosx" + File.separator + name;
+		} else {
+			throw new java.lang.UnsupportedOperationException(os + " is not supported. Try to recompile Jdlib on your machine and then use it.");
+		}
+
+		try (InputStream inputStream = YoloLib.class.getResourceAsStream(libpath)) {
+			File fileOut = File.createTempFile(name, "");
+			try (OutputStream outputStream = new FileOutputStream(fileOut)) {
+				byte[] buffer = new byte[1024];
+				int read = -1;
+				while ((read = inputStream.read(buffer)) != -1) {
+					outputStream.write(buffer, 0, read);
+				}
+				System.load(fileOut.toString());
+			}
+			return SymbolLookup.loaderLookup();
+			// yoloLibrary = SymbolLookup.libraryLookup(libPath, arena);
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to load jdlib native library.", e);
+		}
+	}
+
 	public static void init(String modelPath, String labelsPath, boolean useGPU) {
+		if (initialized) {
+			throw new RuntimeException("YoloLib already initialized");
+		}
+		yoloLibrary = loadLib();
+
 		Path mPath = Paths.get(modelPath);
 		if (!Files.exists(mPath)) {
 			throw new RuntimeException("Unable to locate model with path " + mPath);
@@ -117,7 +158,6 @@ public class YoloLib {
 			throw new RuntimeException("Failed to read labels from " + lPath);
 		}
 
-		yoloLibrary = SymbolLookup.libraryLookup(libPath, arena);
 		MethodHandle initHandler = linker
 			.downcallHandle(
 				yoloLibrary.findOrThrow("initialize"),

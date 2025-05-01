@@ -19,3 +19,13 @@ target_include_directories(yolib PUBLIC "${ONNXRUNTIME_DIR}/include")
 target_compile_features(yolib PRIVATE cxx_std_14)
 target_link_libraries(yolib ${OpenCV_LIBS})
 target_link_libraries(yolib "${ONNXRUNTIME_DIR}/lib/libonnxruntime.so")
+
+if(APPLE)
+set_target_properties(yolib PROPERTIES
+         LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../src/main/resources/native/macosx)
+endif()
+
+if(UNIX AND NOT APPLE)
+set_target_properties(yolib PROPERTIES
+         LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../src/main/resources/native/linux)
+endif()
