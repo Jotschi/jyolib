@@ -41,36 +41,33 @@ for (Detection detection : detections) {
 
 Video Example
 ```java
-boolean useGPU = true;
+boolean useGPU = false;
 
 // Initialize video4j and YoloLib (Video4j is used to handle OpenCV Mat)
 Video4j.init();
 YoloLib.init("YOLOs-CPP/models/yolo8n.onnx", "YOLOs-CPP/models/coco.names", useGPU);
 SimpleImageViewer viewer = new SimpleImageViewer();
 
-boolean run = false;
 // Open the video using Video4j
 try (VideoFile video = VideoFile.open("src/test/resources/3769953-hd_1920_1080_25fps.mp4")) {
 
 	// Process each frame
 	VideoFrame frame;
 	while ((frame = video.frame()) != null) {
-		video.frame();
+		System.out.println(frame);
 		CVUtils.resize(frame, 1024);
 		// Run the detection on the mat reference
 		List<Detection> detections = YoloLib.detect(frame.mat(), true);
 
 		// Print the detections
 		for (Detection detection : detections) {
-			System.out
-				.println("Frame[" + video.currentFrame() + "] " + detection.label() + " = " + detection.conf() + " @ " + detection.box());
+			String label = detection.label();
+			double confidence = detection.conf();
+			BoundingBox box = detection.box();
+			System.out.println("Frame[" + video.currentFrame() + "] " + label + " = " + confidence + " @ " + box);
 		}
 
 		viewer.show(frame.mat());
-		if(!run) {
-			System.in.read();
-			run = true;
-		}
 	}
 }
 ```
